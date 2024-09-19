@@ -1,65 +1,70 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http_parser/http_parser.dart';
 
-class ApiService {
-  final String baseUrl = 'http://192.168.46.133:3000/api/auth';
+class AuthService {
+  final String baseUrl = 'http://192.168.18.27:3000/api/auth';
 
-  Future<String?> login(String email, String password) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
-      );
+  // Register user
+  Future<Map<String, dynamic>> registerUser(
+      String username, String email, String password, String imagePath) async {
+    var uri = Uri.parse('$baseUrl/register');
+    var request = http.MultipartRequest('POST', uri);
+    request.fields['username'] = username;
+    request.fields['email'] = email;
+    request.fields['password'] = password;
+    request.files.add(await http.MultipartFile.fromPath(
+        'profileImage', imagePath,
+        contentType: MediaType('image', 'jpeg') // Set the correct MIME type
+        ));
 
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        if (responseData.containsKey('token')) {
-          return responseData['token'];
-        } else {
-          print('Login response does not contain a token.');
-          return null;
-        }
-      } else {
-        print('Failed to login. Status code: ${response.statusCode}');
-        print('Response body: ${response.body}');
-        return null;
-      }
-    } catch (e) {
-      print('Exception occurred during login: $e');
-      return null;
+    var response = await request.send();
+    var responseData = await http.Response.fromStream(response);
+
+    if (response.statusCode == 201) {
+      return jsonDecode(responseData.body);
+    } else {
+      throw Exception('Failed to register');
     }
   }
 
-  Future<bool> register(String username, String email, String password) async {
-    try {
-      print('Attempting to register with username: $username, email: $email');
-      final response = await http.post(
-        Uri.parse('$baseUrl/register'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'username': username,
-          'email': email,
-          'password': password,
-        }),
-      );
+  // Login user
+  loginUser(String email, String password) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/login'),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        'email': email,
+        'password': password,
+      }),
+    );
 
-      print('Response status code: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
-      if (response.statusCode == 201) {
-        print('Registration successful.');
-        return true;
-      } else {
-        print('Failed to register. Status code: ${response.statusCode}');
-        return false;
-      }
-    } catch (e) {
-      print('Exception occurred during registration: $e');
-      return false;
+    if (response.statusCode == 200) {
+      var data = jsonDecode(response.body);
+      // Save token in SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('token', data['token']);
+    } else {
+      throw Exception('Failed to login');
     }
+  }
+
+  // Logout user
+  Future<void> logoutUser() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('token');
+  }
+
+  // Check if user is logged in
+  Future<bool> isLoggedIn() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.containsKey('token');
+  }
+
+  // Get stored token
+  Future<String?> getToken() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('token');
   }
 }

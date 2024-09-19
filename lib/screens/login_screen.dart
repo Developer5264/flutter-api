@@ -1,8 +1,8 @@
+import 'package:api_practice/screens/register_screen.dart';
+import 'package:api_practice/services/api_service.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../services/api_service.dart';
+
 import 'home_screen.dart';
-import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -10,26 +10,22 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final ApiService apiService = ApiService();
+  final _authService = AuthService();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
   void _login() async {
-    final token = await apiService.login(
-      _emailController.text,
-      _passwordController.text,
-    );
-
-    if (token != null) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('auth_token', token);
+    try {
+      print(_emailController.text);
+      print(_passwordController.text);
+      await _authService.loginUser(
+          _emailController.text, _passwordController.text);
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => HomeScreen()),
       );
-    } else {
-      // Handle login error
-      print('Login failed');
+    } catch (error) {
+      print('Error: $error');
     }
   }
 

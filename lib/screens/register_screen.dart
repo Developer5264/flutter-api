@@ -1,47 +1,41 @@
+import 'dart:io';
+
+import 'package:api_practice/services/api_service.dart';
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import 'package:image_picker/image_picker.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
-
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  final _authService = AuthService();
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final ApiService apiService = ApiService();
+  XFile? _image;
 
-  bool _isLoading = false;
-
-  void _register() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    final isRegistered = await apiService.register(
-      _usernameController.text,
-      _emailController.text,
-      _passwordController.text,
-    );
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (isRegistered) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Registration successful!')),
+  Future<void> _register() async {
+    try {
+      await _authService.registerUser(
+        _usernameController.text,
+        _emailController.text,
+        _passwordController.text,
+        _image!.path,
       );
-      // Navigate to login or next screen
-      Navigator.pop(context);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Registration failed. Please try again.')),
-      );
+      Navigator.pop(context); // Go back to the login screen after registering
+    } catch (error) {
+      print('Error: $error');
     }
+  }
+
+  Future<void> _pickImage() async {
+    XFile? pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
+    setState(() {
+      _image = pickedFile;
+    });
   }
 
   @override
@@ -66,19 +60,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
               obscureText: true,
             ),
             SizedBox(height: 20),
-            _isLoading
-                ? CircularProgressIndicator()
-                : ElevatedButton(
-                    onPressed: () {
-                      _register();
-                    },
-                    child: Text('Register'),
-                  ),
+            _image != null
+                ? Image.file(File(_image!.path), width: 100, height: 100)
+                : Text('No image selected'),
             ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: Text('Login'),
+              onPressed: _pickImage,
+              child: Text('Pick Profile Image'),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _register,
+              child: Text('Register'),
             ),
           ],
         ),
