@@ -18,8 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       print(_emailController.text);
       print(_passwordController.text);
-      await _authService.loginUser(
-          _emailController.text, _passwordController.text);
+      _authService.loginUser(_emailController.text, _passwordController.text);
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => HomeScreen()),

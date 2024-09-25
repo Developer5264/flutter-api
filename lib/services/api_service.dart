@@ -1,11 +1,14 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:api_practice/providers/user_provider.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http_parser/http_parser.dart';
 
 class AuthService {
-  final String baseUrl = 'http://192.168.18.27:3000/api/auth';
-
+  final String baseUrl = 'http://192.168.18.186:3000/api/auth';
   // Register user
   Future<Map<String, dynamic>> registerUser(
       String username, String email, String password, String imagePath) async {
@@ -30,7 +33,7 @@ class AuthService {
   }
 
   // Login user
-  loginUser(String email, String password) async {
+  void loginUser(String email, String password) async {
     final response = await http.post(
       Uri.parse('$baseUrl/login'),
       headers: {"Content-Type": "application/json"},
@@ -50,21 +53,83 @@ class AuthService {
     }
   }
 
-  // Logout user
-  Future<void> logoutUser() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
+  Future<void> updateProfile(
+      String username, String? userId, File? imageFile) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    if (userId == null) {
+      // Handle case where user ID is not available
+      print('User ID not available');
+      return;
+    }
+
+    var uri = Uri.parse('$baseUrl/update-profile');
+    var request = http.MultipartRequest('PUT', uri);
+
+    request.fields['username'] = username;
+    request.fields['userId'] = userId; // Use the retrieved user ID
+
+    if (imageFile != null) {
+      request.files.add(await http.MultipartFile.fromPath(
+          'profileImage', imageFile!.path,
+          contentType: MediaType('image', 'jpeg') // Set the correct MIME type
+          ));
+    }
+
+    request.headers['Authorization'] = 'Bearer $token';
+
+    var response = await request.send();
+    if (response.statusCode == 200) {
+      // Handle success
+      print('Profile updated successfully');
+    } else {
+      // Handle error
+      print('Failed to update profile');
+    }
+  }
+
+// Function to fetch the user profile from the backend
+  Future<void> fetchUserProfile(BuildContext context, String? token) async {
+    var provider = Provider.of<UserProvider>(context, listen: false);
+
+    var uri = Uri.parse('$baseUrl/profile');
+    try {
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token', // Ensure the format is correct
+        },
+      );
+
+      print('Response status code: ${response.statusCode}'); // Debug log
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        provider.setUserProfile(
+            data['_id'], data['username'], data['email'], data['profileImage']);
+      } else {
+        print(
+            'Error fetching user profile: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      print('Error fetching profile: $e');
+    }
+  }
+
+  // Function to load the token from SharedPreferences at startup
+  Future<void> loadUser(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+    if (token != null) {
+      print("token: $token");
+      await fetchUserProfile(context, token);
+    }
   }
 
   // Check if user is logged in
   Future<bool> isLoggedIn() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.containsKey('token');
-  }
-
-  // Get stored token
-  Future<String?> getToken() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('token');
   }
 }

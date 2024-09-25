@@ -10,7 +10,7 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(
-            create: (_) => AuthProvider()), // Add your UserProvider
+            create: (_) => UserProvider()), // Add your UserProvider
       ],
       child: MyApp(),
     ),
@@ -22,8 +22,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    context.read<AuthProvider>().loadToken();
-
     return MaterialApp(
       title: 'Auth App',
       theme: ThemeData(primarySwatch: Colors.blue),

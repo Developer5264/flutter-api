@@ -1,7 +1,10 @@
 import 'dart:io';
+import 'package:api_practice/providers/user_provider.dart';
+import 'package:api_practice/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http_parser/http_parser.dart';
 
@@ -13,6 +16,7 @@ class UpdateProfileScreen extends StatefulWidget {
 }
 
 class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
+  final _authService = AuthService();
   final _usernameController = TextEditingController();
   File? _imageFile;
   String? _userId; // Store the user ID
@@ -26,10 +30,9 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   }
 
   Future<void> _getUserId() async {
-    final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _userId = prefs.getString('userId');
-      print(prefs.getString('userId'));
+      _userId = Provider.of<UserProvider>(context, listen: false).userId;
+      print(Provider.of<UserProvider>(context, listen: false).userId);
     });
   }
 
@@ -39,41 +42,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
       setState(() {
         _imageFile = File(pickedFile.path);
       });
-    }
-  }
-
-  Future<void> _updateProfile() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
-
-    if (_userId == null) {
-      // Handle case where user ID is not available
-      print('User ID not available');
-      return;
-    }
-
-    var uri = Uri.parse('http://192.168.18.27:3000/api/auth/update-profile');
-    var request = http.MultipartRequest('PUT', uri);
-
-    request.fields['username'] = _usernameController.text;
-    request.fields['userId'] = _userId!; // Use the retrieved user ID
-
-    if (_imageFile != null) {
-      request.files.add(await http.MultipartFile.fromPath(
-          'profileImage', _imageFile!.path,
-          contentType: MediaType('image', 'jpeg') // Set the correct MIME type
-          ));
-    }
-
-    request.headers['Authorization'] = 'Bearer $token';
-
-    var response = await request.send();
-    if (response.statusCode == 200) {
-      // Handle success
-      print('Profile updated successfully');
-    } else {
-      // Handle error
-      print('Failed to update profile');
     }
   }
 
@@ -102,7 +70,10 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
             ),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: _updateProfile,
+              onPressed: () {
+                _authService.updateProfile(
+                    _usernameController.text, _userId, _imageFile);
+              },
               child: Text('Update Profile'),
             ),
           ],

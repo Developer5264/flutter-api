@@ -19,11 +19,13 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _authService.loadUser(context);
   }
 
   void _logout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear(); // Clear all stored preferences
+    Provider.of<UserProvider>(context, listen: false).setAllToNull();
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => LoginScreen()),
@@ -32,7 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    var userProvider = Provider.of<AuthProvider>(context);
+    var userProvider = Provider.of<UserProvider>(context);
     print(userProvider.email);
     print(userProvider.profileImage);
     print(userProvider.username);
@@ -65,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
               if (userProvider.profileImage != null &&
                   userProvider.profileImage!.isNotEmpty)
                 Image.network(
-                  "http://192.168.18.27:3000${userProvider.profileImage!}",
+                  "http://192.168.18.186:3000${userProvider.profileImage!}",
                   width: 100,
                   height: 100,
                 ),
