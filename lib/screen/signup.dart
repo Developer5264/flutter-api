@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:api_practice/services/api_service.dart';
 import 'package:flutter/material.dart';
 
 import 'package:api_practice/services/imagepicker.dart';
@@ -13,25 +14,39 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  final email = TextEditingController();
+  final _authService = AuthService();
+
+  final _emailController = TextEditingController();
   FocusNode email_F = FocusNode();
-  final password = TextEditingController();
+  final _passwordController = TextEditingController();
   FocusNode password_F = FocusNode();
-  final passwordConfirme = TextEditingController();
-  FocusNode passwordConfirme_F = FocusNode();
-  final username = TextEditingController();
+  final _usernameController = TextEditingController();
   FocusNode username_F = FocusNode();
   final bio = TextEditingController();
   FocusNode bio_F = FocusNode();
   File? _imageFile;
+  Future<void> _register() async {
+    try {
+      await _authService.registerUser(
+        _usernameController.text,
+        _emailController.text,
+        _passwordController.text,
+        _imageFile!.path,
+      );
+      Navigator.pop(context); // Go back to the login screen after registering
+    } catch (error) {
+      print('Error: $error');
+    }
+  }
+
   @override
   void dispose() {
     // TODO: implement dispose
     super.dispose();
-    email.dispose();
-    password.dispose();
-    passwordConfirme.dispose();
-    username.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+
+    _usernameController.dispose();
     bio.dispose();
   }
 
@@ -40,55 +55,56 @@ class _SignupScreenState extends State<SignupScreen> {
       resizeToAvoidBottomInset: false,
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
-          children: [
-            SizedBox(width: 96.w, height: 10.h),
-            Center(
-              child: Image.asset('images/logo.jpg'),
-            ),
-            SizedBox(width: 96.w, height: 70.h),
-            InkWell(
-              onTap: () async {
-                File _imagefilee = await ImagePickerr().uploadImage('gallery');
-                setState(() {
-                  _imageFile = _imagefilee;
-                });
-              },
-              child: CircleAvatar(
-                radius: 36.r,
-                backgroundColor: Colors.grey,
-                child: _imageFile == null
-                    ? CircleAvatar(
-                        radius: 34.r,
-                        backgroundImage: AssetImage('images/person.png'),
-                        backgroundColor: Colors.grey.shade200,
-                      )
-                    : CircleAvatar(
-                        radius: 34.r,
-                        backgroundImage: Image.file(
-                          _imageFile!,
-                          fit: BoxFit.cover,
-                        ).image,
-                        backgroundColor: Colors.grey.shade200,
-                      ),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.vertical,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(width: 96.w, height: 10.h),
+              Center(
+                child: Image.asset('images/logo.jpg'),
               ),
-            ),
-            SizedBox(height: 40.h),
-            Textfild(email, email_F, 'Email', Icons.email),
-            SizedBox(height: 15.h),
-            Textfild(username, username_F, 'username', Icons.person),
-            SizedBox(height: 15.h),
-            Textfild(bio, bio_F, 'bio', Icons.abc),
-            SizedBox(height: 15.h),
-            Textfild(password, password_F, 'Password', Icons.lock),
-            SizedBox(height: 15.h),
-            Textfild(passwordConfirme, passwordConfirme_F, 'PasswordConfirme',
-                Icons.lock),
-            SizedBox(height: 15.h),
-            Signup(),
-            SizedBox(height: 15.h),
-            Have()
-          ],
+              SizedBox(width: 96.w, height: 70.h),
+              InkWell(
+                onTap: () async {
+                  File _imagefilee =
+                      await ImagePickerr().uploadImage('gallery');
+                  setState(() {
+                    _imageFile = _imagefilee;
+                  });
+                },
+                child: CircleAvatar(
+                  radius: 36.r,
+                  backgroundColor: Colors.grey,
+                  child: _imageFile == null
+                      ? CircleAvatar(
+                          radius: 34.r,
+                          backgroundImage: AssetImage('images/person.png'),
+                          backgroundColor: Colors.grey.shade200,
+                        )
+                      : CircleAvatar(
+                          radius: 34.r,
+                          backgroundImage: Image.file(
+                            _imageFile!,
+                            fit: BoxFit.cover,
+                          ).image,
+                          backgroundColor: Colors.grey.shade200,
+                        ),
+                ),
+              ),
+              SizedBox(height: 40.h),
+              Textfild(_emailController, email_F, 'Email', Icons.email),
+              SizedBox(height: 15.h),
+              Textfild(
+                  _usernameController, username_F, 'username', Icons.person),
+              SizedBox(height: 15.h),
+              Textfild(_passwordController, password_F, 'Password', Icons.lock),
+              SizedBox(height: 15.h),
+              Signup(),
+              SizedBox(height: 15.h),
+              Have()
+            ],
+          ),
         ),
       ),
     );
@@ -98,7 +114,7 @@ class _SignupScreenState extends State<SignupScreen> {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 10.w),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             "Don you have account?  ",
@@ -128,7 +144,9 @@ class _SignupScreenState extends State<SignupScreen> {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 10.w),
       child: InkWell(
-        onTap: () {},
+        onTap: () {
+          _register();
+        },
         child: Container(
           alignment: Alignment.center,
           width: double.infinity,

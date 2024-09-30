@@ -1,5 +1,6 @@
 import 'package:api_practice/screen/signup.dart';
 import 'package:api_practice/screen/navigation.dart';
+import 'package:api_practice/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -11,16 +12,47 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final email = TextEditingController();
+  final _authService = AuthService();
+
+  final _emailController = TextEditingController();
   FocusNode email_F = FocusNode();
-  final password = TextEditingController();
+  final _passwordController = TextEditingController();
   FocusNode password_F = FocusNode();
   @override
   void dispose() {
     // TODO: implement dispose
     super.dispose();
-    email.dispose();
-    password.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+  }
+
+  void _login(BuildContext context) async {
+    try {
+      print(_emailController.text);
+      print(_passwordController.text);
+      await _authService.loginUser(
+          context, _emailController.text, _passwordController.text);
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => Navigations_Screen()),
+      );
+    } catch (error) {
+      print('Error: $error');
+    }
+  }
+
+  void _loginWithGoogle(BuildContext context) async {
+    try {
+      print(_emailController.text);
+      print(_passwordController.text);
+      await _authService.googleSignIn(context);
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => Navigations_Screen()),
+      );
+    } catch (error) {
+      print('Error: $error');
+    }
   }
 
   Widget build(BuildContext context) {
@@ -37,9 +69,9 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Image.asset('images/logo.jpg'),
             ),
             SizedBox(height: 120.h),
-            Textfild(email, email_F, 'Email', Icons.email),
+            Textfild(_emailController, email_F, 'Email', Icons.email),
             SizedBox(height: 15.h),
-            Textfild(password, password_F, 'Password', Icons.lock),
+            Textfild(_passwordController, password_F, 'Password', Icons.lock),
             SizedBox(height: 15.h),
             forget(),
             SizedBox(height: 15.h),
@@ -52,11 +84,47 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  Widget googleSignInButton() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 10.w),
+      child: InkWell(
+        onTap: () {
+          _loginWithGoogle(context);
+        },
+        child: Container(
+          alignment: Alignment.center,
+          width: double.infinity,
+          height: 44.h,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10.r),
+            border: Border.all(color: Colors.grey),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset('images/google_logo.png', height: 24.h),
+              SizedBox(width: 10.w),
+              Text(
+                'Sign in with Google',
+                style: TextStyle(
+                  fontSize: 18.sp,
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget Have() {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 10.w),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             "Don't have account?  ",
@@ -90,10 +158,7 @@ class _LoginScreenState extends State<LoginScreen> {
       padding: EdgeInsets.symmetric(horizontal: 10.w),
       child: InkWell(
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => Navigations_Screen()),
-          );
+          _login(context);
         },
         child: Container(
           alignment: Alignment.center,

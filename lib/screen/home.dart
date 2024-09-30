@@ -1,69 +1,108 @@
+import 'dart:convert';
+import 'package:api_practice/services/api_service.dart';
 import 'package:flutter/material.dart';
-import 'package:api_practice/widgets/post_widget.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:http/http.dart' as http;
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
-
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  _HomeScreenState createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  List<dynamic> posts = [];
+  final AuthService apiService = AuthService(); // Instantiate ApiService
+
+  @override
+  void initState() {
+    super.initState();
+    fetchPosts();
+  }
+
+  Future<void> fetchPosts() async {
+    try {
+      List<dynamic> fetchedPosts = await apiService.fetchPosts();
+      setState(() {
+        posts = fetchedPosts;
+      });
+    } catch (e) {
+      // Handle the error appropriately here
+      print(e.toString());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        centerTitle: true,
-        elevation: 0,
-        title: SizedBox(
-          width: 105.w,
-          height: 28.h,
-          child: Image.asset('images/instagram.jpg'),
-        ),
-        leading: Image.asset('images/camera.jpg'),
-        actions: [
-          const Icon(
-            Icons.favorite_border_outlined,
-            color: Colors.black,
-            size: 25,
+      appBar: AppBar(title: Text('Posts')),
+      body: posts.isEmpty
+          ? Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: posts.length,
+              itemBuilder: (context, index) {
+                final post = posts[index];
+                return PostTile(
+                  timeAgo: post['createdAt'],
+                  postImage: post['imageUrl'],
+                  caption: post['caption'],
+                );
+              },
+            ),
+    );
+  }
+}
+
+class PostTile extends StatelessWidget {
+  final String timeAgo;
+  final String postImage;
+  final String caption;
+
+  PostTile({
+    required this.timeAgo,
+    required this.postImage,
+    required this.caption,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(_formatTimeAgo(timeAgo),
+                      style: TextStyle(color: Colors.grey)),
+                ],
+              ),
+            ],
           ),
-          SizedBox(
-            width: 15,
-          ),
-          Image.asset('images/send.jpg'),
-          SizedBox(
-            width: 15,
-          ),
-        ],
-        backgroundColor: const Color(0xffFAFAFA),
-      ),
-      body: CustomScrollView(
-        slivers: [
-          // StreamBuilder(
-          //   stream: _firebaseFirestore
-          //       .collection('posts')
-          //       .orderBy('time', descending: true)
-          //       .snapshots(),
-          //   builder: (context, snapshot) {
-          //     return SliverList(
-          //       delegate: SliverChildBuilderDelegate(
-          //         (context, index) {
-          //           if (!snapshot.hasData) {
-          //             return Center(child: CircularProgressIndicator());
-          //           }
-          //           return PostWidget(snapshot.data!.docs[index].data());
-          //         },
-          //         childCount:
-          //             snapshot.data == null ? 0 : snapshot.data!.docs.length,
-          //       ),
-          //     );
-          //   },
-          // )
+          SizedBox(height: 10),
+          Image.network('http://192.168.18.27:3000' +
+              postImage), // Display the post image
+          SizedBox(height: 10),
+          Text(caption),
+          Divider(),
         ],
       ),
     );
+  }
+
+  // Utility function to format time (simplified for now)
+  String _formatTimeAgo(String timestamp) {
+    DateTime postTime = DateTime.parse(timestamp);
+    Duration difference = DateTime.now().difference(postTime);
+
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} minutes ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours} hours ago';
+    } else {
+      return '${difference.inDays} days ago';
+    }
   }
 }

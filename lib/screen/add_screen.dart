@@ -1,103 +1,53 @@
+import 'dart:io';
+import 'package:api_practice/services/api_service.dart';
+import 'package:api_practice/services/imagepicker.dart';
 import 'package:flutter/material.dart';
-import 'package:api_practice/screen/add_post_screen.dart';
-import 'package:api_practice/screen/add_reels_screen.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
-class AddScreen extends StatefulWidget {
-  const AddScreen({super.key});
-
+class PostScreen extends StatefulWidget {
   @override
-  State<AddScreen> createState() => _AddScreenState();
+  _PostScreenState createState() => _PostScreenState();
 }
 
-int _currentIndex = 0;
+class _PostScreenState extends State<PostScreen> {
+  File? _imageFile;
+  final _authService = AuthService();
 
-class _AddScreenState extends State<AddScreen> {
-  late PageController pageController;
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    pageController = PageController();
-  }
+  TextEditingController captionController = TextEditingController();
 
   @override
-  void dispose() {
-    // TODO: implement dispose
-    super.dispose();
-    pageController.dispose();
-  }
-
-  onPageChanged(int page) {
-    setState(() {
-      _currentIndex = page;
-    });
-  }
-
-  navigationTapped(int page) {
-    pageController.jumpToPage(page);
-  }
-
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
-      body: SafeArea(
-        child: Stack(
-          alignment: Alignment.bottomCenter,
+      appBar: AppBar(title: Text('Create Post')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
           children: [
-            PageView(
-              controller: pageController,
-              onPageChanged: onPageChanged,
-              children: const [
-                AddPostScreen(),
-                AddReelsScreen(),
-              ],
+            _imageFile == null
+                ? Text('No image selected.')
+                : Image.file(_imageFile!, height: 200),
+            TextField(
+              controller: captionController,
+              decoration: InputDecoration(hintText: 'Write a caption...'),
             ),
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 300),
-              bottom: 10.h,
-              right: _currentIndex == 0 ? 100.w : 150.w,
-              child: Container(
-                width: 120.w,
-                height: 30.h,
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(20.r),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        navigationTapped(0);
-                      },
-                      child: Text(
-                        'Post',
-                        style: TextStyle(
-                          fontSize: 15.sp,
-                          fontWeight: FontWeight.w500,
-                          color:
-                              _currentIndex == 0 ? Colors.white : Colors.grey,
-                        ),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        navigationTapped(1);
-                      },
-                      child: Text(
-                        'Reels',
-                        style: TextStyle(
-                          fontSize: 15.sp,
-                          fontWeight: FontWeight.w500,
-                          color:
-                              _currentIndex == 1 ? Colors.white : Colors.grey,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () async {
+                File _imagefilee = await ImagePickerr().uploadImage('gallery');
+                setState(() {
+                  _imageFile = _imagefilee;
+                });
+              },
+              child: Text('Pick Image'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await _authService.uploadPost(
+                    context, _imageFile, captionController);
+              },
+              child: Text('Upload Post'),
             ),
           ],
         ),

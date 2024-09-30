@@ -1,82 +1,77 @@
-import 'package:date_format/date_format.dart';
+import 'package:api_practice/services/api_service.dart';
 import 'package:flutter/material.dart';
-import 'package:api_practice/screen/post_screen.dart';
-import 'package:api_practice/screen/profile_screen.dart';
-import 'package:api_practice/widgets/image_cached.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
-class ExploreScreen extends StatefulWidget {
-  const ExploreScreen({super.key});
-
+class SearchScreen extends StatefulWidget {
   @override
-  State<ExploreScreen> createState() => _ExploreScreenState();
+  _SearchScreenState createState() => _SearchScreenState();
 }
 
-class _ExploreScreenState extends State<ExploreScreen> {
-  final search = TextEditingController();
+class _SearchScreenState extends State<SearchScreen> {
+  TextEditingController _searchController = TextEditingController();
+  List<dynamic> _searchResults = [];
+  bool _isLoading = false;
 
-  bool show = true;
+  AuthService _apiService = AuthService(); // Initialize the API service
+
+  // Function to search users by username
+  Future<void> _performSearch(String username) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    // Call the API service to search users
+    final users = await _apiService.searchUser(username);
+
+    setState(() {
+      _searchResults = users;
+      _isLoading = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SearchBox(),
-          ],
-        ),
+      appBar: AppBar(
+        title: Text('Search Users'),
       ),
-    );
-  }
-
-  SliverToBoxAdapter SearchBox() {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
-        child: Container(
-          width: double.infinity,
-          height: 36.h,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: BorderRadius.all(
-              Radius.circular(10.r),
-            ),
-          ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 5.w),
-            child: Row(
-              crossAxisAlignment:
-                  CrossAxisAlignment.center, // Ensures vertical alignment
-              children: [
-                const Icon(
-                  Icons.search,
-                  color: Colors.black,
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                labelText: 'Search by username',
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.search),
+                  onPressed: () {
+                    if (_searchController.text.isNotEmpty) {
+                      _performSearch(
+                          _searchController.text); // Call the search function
+                    }
+                  },
                 ),
-                SizedBox(width: 10.w),
-                Expanded(
-                  child: TextField(
-                    onChanged: (value) {
-                      setState(() {
-                        show = value.isEmpty;
-                      });
-                    },
-                    controller: search,
-                    decoration: InputDecoration(
-                      hintText: 'Search User',
-                      hintStyle: const TextStyle(color: Colors.black),
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(
-                          vertical: 10.h), // Adjust padding
+              ),
+            ),
+            SizedBox(height: 20),
+            _isLoading
+                ? CircularProgressIndicator()
+                : Expanded(
+                    child: ListView.builder(
+                      itemCount: _searchResults.length,
+                      itemBuilder: (context, index) {
+                        final user = _searchResults[index];
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundImage: NetworkImage(
+                                "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT9Od1rpx4IGCvwx4TrzAmHLGDF2YRSmsomrIVwC7GvpiegUJ8CC3yHH9pDS3KSB5_ERwU&usqp=CAU"),
+                          ),
+                          title: Text(user['username']),
+                        );
+                      },
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
+          ],
         ),
       ),
     );

@@ -1,3 +1,4 @@
+import 'package:api_practice/services/api_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:api_practice/screen/add_screen.dart';
@@ -7,6 +8,7 @@ import 'package:api_practice/screen/home.dart';
 import 'package:api_practice/screen/profile_screen.dart';
 import 'package:api_practice/screen/reelsScreen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Navigations_Screen extends StatefulWidget {
   const Navigations_Screen({super.key});
@@ -18,12 +20,27 @@ class Navigations_Screen extends StatefulWidget {
 int _currentIndex = 0;
 
 class _Navigations_ScreenState extends State<Navigations_Screen> {
+  final _authService = AuthService();
+
   late PageController pageController;
+
+  void _fetchUserProfile(BuildContext context) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      await _authService.fetchUserProfile(context, token);
+    } catch (error) {
+      print('Error: $error');
+    }
+  }
+
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     pageController = PageController();
+    _fetchUserProfile(context);
   }
 
   @override
@@ -85,9 +102,9 @@ class _Navigations_ScreenState extends State<Navigations_Screen> {
         onPageChanged: onPageChanged,
         children: [
           HomeScreen(),
-          ExploreScreen(),
-          AddScreen(),
-          ReelScreen(),
+          SearchScreen(),
+          PostScreen(),
+          RealTimeChatScreen(),
           ProfileScreen(),
         ],
       ),

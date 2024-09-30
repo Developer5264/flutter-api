@@ -1,8 +1,14 @@
+import 'package:api_practice/providers/user_provider.dart';
+import 'package:api_practice/screen/login_screen.dart';
+import 'package:api_practice/screen/update_screen.dart';
 import 'package:api_practice/widgets/column_widget.dart';
+import 'package:api_practice/widgets/custom_list_tile.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:api_practice/widgets/image_cached.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({
@@ -17,9 +23,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool yourse = false;
   List following = [];
   bool follow = false;
+  void _logout(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear(); // Clear all stored preferences
+    Provider.of<UserProvider>(context, listen: false).setAllToNull();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => LoginScreen()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    var userProvider = Provider.of<UserProvider>(context);
+
     return DefaultTabController(
       length: 3,
       child: Scaffold(
@@ -28,7 +45,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             children: [
               SizedBox(height: 25.h),
-              Expanded(child: Head()), // Wrap Head with Expanded
+              Expanded(child: Head(userProvider)), // Wrap Head with Expanded
             ],
           ),
         ),
@@ -37,7 +54,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ignore: non_constant_identifier_names
-  Widget Head() {
+  Widget Head(UserProvider provider) {
     return Container(
       color: Colors.white,
       child: Column(
@@ -51,7 +68,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   width: 80.w,
                   height: 80.h,
                   child: CachedImage(
-                    "https://cdn-icons-png.flaticon.com/512/5110/5110617.png",
+                    "http://192.168.18.27:3000${provider.profileImage!}",
                   ),
                 ),
               ),
@@ -76,7 +93,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Armaghan",
+                  'Username: ${provider.username ?? ''}',
                   style: TextStyle(
                     fontSize: 12.sp,
                     fontWeight: FontWeight.bold,
@@ -96,90 +113,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           SizedBox(height: 20.h),
-          Visibility(
-            visible: !follow,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 13.w),
-              child: GestureDetector(
-                onTap: () {},
-                child: Container(
-                  alignment: Alignment.center,
-                  height: 30.h,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: yourse ? Colors.white : Colors.blue,
-                    borderRadius: BorderRadius.circular(5.r),
-                    border: Border.all(
-                      color: yourse ? Colors.grey.shade400 : Colors.blue,
-                    ),
-                  ),
-                  child: yourse
-                      ? Text('Edit Your Profile')
-                      : Text(
-                          'Follow',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                ),
-              ),
-            ),
+          CustomListTile(
+            leadingIcon: Icons.update,
+            text: 'Update Profile',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const UpdateProfileScreen()),
+              );
+            },
           ),
-          Visibility(
-            visible: follow,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 13.w),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {},
-                      child: Container(
-                        alignment: Alignment.center,
-                        height: 30.h,
-                        width: 100.w,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(5.r),
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Text('Unfollow'),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 8.w),
-                  Expanded(
-                    child: Container(
-                      alignment: Alignment.center,
-                      height: 30.h,
-                      width: 100.w,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(5.r),
-                        border: Border.all(color: Colors.grey.shade200),
-                      ),
-                      child: Text(
-                        'Message',
-                        style: TextStyle(color: Colors.black),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(height: 25.h),
-          SizedBox(
-            width: double.infinity,
-            height: 30.h,
-            child: const TabBar(
-              unselectedLabelColor: Colors.grey,
-              labelColor: Colors.black,
-              indicatorColor: Colors.black,
-              tabs: [
-                Icon(Icons.grid_on),
-                Icon(Icons.video_collection),
-                Icon(Icons.person),
-              ],
-            ),
+          CustomListTile(
+            leadingIcon: Icons.logout,
+            text: 'Logout',
+            onTap: () {
+              _logout(context);
+            },
           ),
           SizedBox(height: 5.h),
         ],
